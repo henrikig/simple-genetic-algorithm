@@ -1,15 +1,27 @@
 import random
-import numpy as np
+from abc import ABC
+from abc import abstractmethod
 from math import log
 
+import numpy as np
 
-class GeneticAlgorithm:
+
+class GeneticAlgorithm(ABC):
     """Super class genetic algorithm"""
-    def __init__(self, population_size=100, chromosome_length=15,
-                 crossover_rate=0.6, mutation_rate=0.00333,
-                 selection_method='roulette', crowding=False,
-                 elitism=0, tournament_size=3, max_iter=1000, plot_iter=None):
 
+    def __init__(
+        self,
+        population_size=100,
+        chromosome_length=15,
+        crossover_rate=0.6,
+        mutation_rate=0.00333,
+        selection_method="roulette",
+        crowding=False,
+        elitism=0,
+        tournament_size=3,
+        max_iter=1000,
+        plot_iter=None,
+    ):
         # Set input variables
         self.population_size = population_size
         self.chromosome_length = chromosome_length
@@ -36,20 +48,22 @@ class GeneticAlgorithm:
 
         # Initialize population of chromosomes with length 'self.chromosome_length'
         for _ in range(self.population_size):
-            self.population.append(f'{random.getrandbits(self.chromosome_length):0{self.chromosome_length}b}')
+            self.population.append(f"{random.getrandbits(self.chromosome_length):0{self.chromosome_length}b}")
 
         # Choose selection method based on input. Defaults to 'roulette'.
-        if selection_method == 'roulette':
+        if selection_method == "roulette":
             self.parent_selection = self.roulette_selection
-        elif selection_method == 'tournament':
+        elif selection_method == "tournament":
             self.parent_selection = self.tournament_selection
         else:
             raise ValueError('Not a valid selection method. Please choose "roulette" or "stochastic".')
 
     # Sub-class based fitness implementations
+    @abstractmethod
     def on_fitness(self) -> list:
         pass
 
+    @abstractmethod
     def individual_fitness(self, bitstring) -> float:
         pass
 
@@ -94,16 +108,15 @@ class GeneticAlgorithm:
             bit_list = list(bitstring)
             # For each bit, mutate (flip) it with a probability of 'self.mutation_rate'
             bit_list = [str(int(bit) ^ 1) if random.random() < self.mutation_rate else bit for bit in bit_list]
-            bitstring = ''.join(bit_list)
+            bitstring = "".join(bit_list)
             # Replace with the mutated bit
             self.mating_pool[i] = bitstring
 
     def elitism(self):
         # Sort parents based on their fitness
-        top_elements = [parent for _, parent in
-                        sorted(zip(self.fitness, self.population), reverse=True)]
+        top_elements = [parent for _, parent in sorted(zip(self.fitness, self.population), reverse=True)]
         # Pick the 'self._elitism' best parents for the next generation
-        top_elements = top_elements[:self._elitism]
+        top_elements = top_elements[: self._elitism]
         # Add selected parents to the mating pool
         self.mating_pool.extend(top_elements)
 
@@ -116,8 +129,7 @@ class GeneticAlgorithm:
         """Selects individuals to survive based on genotype distance metrics"""
         total_fitness = sum(self.fitness)
         proportions = [fitness / total_fitness for fitness in self.fitness]
-        selected_parents = random.choices(range(len(self.population)),
-                                          proportions, k=self.population_size-self._elitism)
+        selected_parents = random.choices(range(len(self.population)), proportions, k=self.population_size - self._elitism)
         for p1_index, p2_index in zip(selected_parents[::2], selected_parents[1::2]):
             p1 = self.population[p1_index]
             p2 = self.population[p2_index]
@@ -134,26 +146,28 @@ class GeneticAlgorithm:
                 bit_list = list(bitstring)
                 # For each bit, mutate (flip) it with a probability of 'self.mutation_rate'
                 bit_list = [str(int(bit) ^ 1) if random.random() < self.mutation_rate else bit for bit in bit_list]
-                bitstring = ''.join(bit_list)
+                bitstring = "".join(bit_list)
                 # Replace the mutated bit
                 children[i] = bitstring
             # Calculate
             child_fitness = [self.individual_fitness(child) for child in children]
-            for child, child_fitness in zip(children, child_fitness):
+            for child, c_fitness in zip(children, child_fitness):
                 if sum(p != c for p, c in zip(p1, child)) < sum(p != c for p, c in zip(p2, child)):
-                    if child_fitness > p1_fitness:
+                    if c_fitness > p1_fitness:
                         self.mating_pool.append(child)
                     else:
                         self.mating_pool.append(p1)
                 else:
-                    if child_fitness > p2_fitness:
+                    if c_fitness > p2_fitness:
                         self.mating_pool.append(child)
                     else:
                         self.mating_pool.append(p2)
 
+    @abstractmethod
     def plot(self, title=None):
         pass
 
+    @abstractmethod
     def is_finished(self) -> bool:
         pass
 
@@ -181,9 +195,11 @@ class GeneticAlgorithm:
         # Store this generation's entropy
         self._entropy.append(entropy)
 
+    @abstractmethod
     def plot_entropy(self):
         pass
 
+    @abstractmethod
     def save_entropy(self):
         pass
 
@@ -204,12 +220,12 @@ class GeneticAlgorithm:
             self.on_fitness()
             self.entropy()
             self.iter_count += 1
-            print(f'{self.iter_count}:', max(self.fitness))
+            print(f"{self.iter_count}:", max(self.fitness))
 
             # Plot the desired iterations
             if self.iter_count in self.plot_iter:
-                self.plot(title=f'Iteration {self.iter_count}')
+                self.plot(title=f"Iteration {self.iter_count}")
 
-        self.plot(title=f'Iteration {self.iter_count}')
+        self.plot(title=f"Iteration {self.iter_count}")
         self.save_entropy()
         self.plot_entropy()

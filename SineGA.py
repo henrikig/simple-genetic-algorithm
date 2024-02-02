@@ -1,16 +1,40 @@
-from GeneticAlgorithm import GeneticAlgorithm
-import numpy as np
-import matplotlib.pyplot as plt
 import pickle
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from GeneticAlgorithm import GeneticAlgorithm
 
 
 class SineGA(GeneticAlgorithm):
     """Sub-class implementation of the genetic algorithm with sine fitness function"""
-    def __init__(self, population_size=100, chromosome_length=15, crossover_rate=0.6, mutation_rate=0.00333,
-                 selection_method='roulette', crowding=False, elitism=0, tournament_size=3,
-                 max_iter=1000, plot_iter=None):
-        super().__init__(population_size, chromosome_length, crossover_rate, mutation_rate,
-                         selection_method, crowding, elitism, tournament_size, max_iter, plot_iter)
+
+    def __init__(
+        self,
+        population_size=100,
+        chromosome_length=15,
+        crossover_rate=0.6,
+        mutation_rate=0.00333,
+        selection_method="roulette",
+        crowding=False,
+        elitism=0,
+        tournament_size=3,
+        max_iter=1000,
+        plot_iter=None,
+    ):
+        super().__init__(
+            population_size,
+            chromosome_length,
+            crossover_rate,
+            mutation_rate,
+            selection_method,
+            crowding,
+            elitism,
+            tournament_size,
+            max_iter,
+            plot_iter,
+        )
 
         # Calculate scale which is applied to get fitness values on [0, 128]
         self.scale = self.chromosome_length - 7
@@ -37,16 +61,16 @@ class SineGA(GeneticAlgorithm):
         x_fitness = np.array([int(bitstring, 2) * 2 ** (-scale) for bitstring in self.population])
         y_fitness = np.sin(x_fitness)
         plt.plot(x, y)
-        plt.plot(x_fitness, y_fitness, 'o', color='orange')
+        plt.plot(x_fitness, y_fitness, "o", color="orange")
         if title is not None:
             plt.title(title)
         plt.show()
 
     def plot_entropy(self):
         """Plots the entropy of last two recent runs of crowding vs no crowding"""
-        with open("data/sine_crowding.p", "rb") as fp:
+        with Path("data/sine_crowding.p").open("rb") as fp:
             crowding = pickle.load(fp)
-        with open("data/sine_no_crowding.p", "rb") as fp:
+        with Path("data/sine_no_crowding.p").open("rb") as fp:
             no_crowding = pickle.load(fp)
         plt.plot(crowding, label="Crowding")
         plt.plot(no_crowding, color="darkorange", label="No Crowding")
@@ -57,15 +81,24 @@ class SineGA(GeneticAlgorithm):
     def save_entropy(self):
         """Stores the entropy for later use"""
         if self._crowding:
-            with open('data/sine_crowding.p', 'wb') as fp:
+            with Path("data/sine_crowding.p").open("wb") as fp:
                 pickle.dump(self._entropy, fp)
         else:
-            with open('data/sine_no_crowding.p', 'wb') as fp:
+            with Path("data/sine_no_crowding.p").open("wb") as fp:
                 pickle.dump(self._entropy, fp)
 
 
-if __name__ == '__main__':
-    ga = SineGA(population_size=100, chromosome_length=15, crossover_rate=0.6, mutation_rate=0.00333,
-                selection_method='tournament', crowding=True, elitism=4, tournament_size=10,
-                max_iter=1000, plot_iter=[1, 5, 10, 20, 50])
+if __name__ == "__main__":
+    ga = SineGA(
+        population_size=100,
+        chromosome_length=15,
+        crossover_rate=0.6,
+        mutation_rate=0.00333,
+        selection_method="tournament",
+        crowding=True,
+        elitism=4,
+        tournament_size=10,
+        max_iter=1000,
+        plot_iter=[1, 5, 10, 20, 50],
+    )
     ga.main()
